@@ -231,21 +231,30 @@ export const NetlessAppPDFjs: NetlessApp<PDFjsAppAttributes, {}, PDFjsAppOptions
       }
     }
 
+    let throttleSyncPDF = 0
     const syncPDFView = () => {
-      const intrinsic = app.size();
-      if (intrinsic.width > 0 && intrinsic.height > 0) {
-        const camera = view.camera
-        const baseScale = Math.min(
-          view.size.width / intrinsic.width,
-          view.size.height / intrinsic.height
-        )
-        const scale = camera.scale / baseScale
-        const x = -camera.centerX * baseScale
-        const y = -camera.centerY * baseScale
-        app.canvas.style.position = 'absolute'
-        app.canvas.style.transform = `scale(${scale}) translate(${x}px, ${y}px)`
-      }
+      if (throttleSyncPDF > 0) return
+      throttleSyncPDF = requestAnimationFrame(() => {
+        throttleSyncPDF = 0
+        const intrinsic = app.size();
+        if (intrinsic.width > 0 && intrinsic.height > 0) {
+          const camera = view.camera
+          const baseScale = Math.min(
+            view.size.width / intrinsic.width,
+            view.size.height / intrinsic.height
+          )
+          const scale = camera.scale / baseScale
+          const x = -camera.centerX * baseScale
+          const y = -camera.centerY * baseScale
+          app.canvas.style.position = 'absolute'
+          app.canvas.style.transform = `scale(${scale}) translate(${x}px, ${y}px)`
+        }
+      })
     }
+    dispose.add(() => {
+      cancelAnimationFrame(throttleSyncPDF)
+      throttleSyncPDF = 0
+    })
     dispose.make(() => {
       view.callbacks.on('onCameraUpdated', syncPDFView)
       return () => view.callbacks.off('onCameraUpdated', syncPDFView)
