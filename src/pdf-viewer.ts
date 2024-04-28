@@ -27,6 +27,8 @@ export interface PDFViewerOptions {
   readonly previewScale?: number
   /** Readonly mode (disable footer), default is `false`. */
   readonly readonly?: boolean
+  /** Callback to receive render errors. */
+  readonly onRenderError?: (reason: unknown) => void
 }
 
 function inferWorkerSrc(pdfjsLib: string): string {
@@ -381,6 +383,7 @@ export class PDFViewer implements IDisposable<void> {
 
   // Either the PDF.js lib or getDocument() failed to load.
   onError(reason: unknown) {
+    this.options.onRenderError?.(reason)
     console.error(reason)
     this.dispose()
   }
@@ -394,6 +397,7 @@ export class PDFViewer implements IDisposable<void> {
   onRenderError(reason: unknown) {
     if (('' + reason).includes('RenderingCancelledException')) return
     console.warn(reason)
+    this.options.onRenderError?.(reason)
   }
 
   async makePreview() {
