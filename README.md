@@ -8,6 +8,10 @@ A [Netless App](https://github.com/netless-io/netless-app) that renders PDF file
 
 ## Usage
 
+> [!IMPORTANT]
+> This app only implements viewing PDF files.\
+> It does not support `dispatchDocsEvent()` nor <q>export PDF</q>.
+
 1. Get a static URL pointing to the PDF file.
 
    This package only synces the URL for each client to download the PDF.
@@ -28,7 +32,10 @@ A [Netless App](https://github.com/netless-io/netless-app) that renders PDF file
    ```js
    fastboard.manager.addApp({
      kind: 'PDFjs',
-     options: { title: 'a.pdf' },
+     options: {
+       title: 'a.pdf',
+       scenePath: '/pdf/paper' // ! This is required.
+     },
      attributes: {
        src: 'https://cdn.jsdelivr.net/gh/mfogel/polygon-clipping/paper.pdf'
      }
