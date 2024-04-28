@@ -2,7 +2,7 @@ import { disposableStore, type IDisposable } from '@wopjs/disposable'
 import { listen } from '@wopjs/dom'
 import { seq } from '@wopjs/async-seq'
 import type { PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist'
-import { arrowLeftSVG, arrowRightSVG, sidebarSVG } from './icons'
+import { arrowLeftSVG, arrowRightSVG, loadingSVG, sidebarSVG } from './icons'
 
 type PDFjsModule = typeof import('pdfjs-dist')
 type GetDocument = PDFjsModule['getDocument']
@@ -23,6 +23,8 @@ export interface PDFViewerOptions {
   readonly hidpi?: boolean | number
   /** Max rendering page size in pixels, default is no limit. If set, all pages will be shrinked to let the biggest page fit this size.  */
   readonly maxSize?: { readonly width: number, readonly height: number } | null
+  /** Enable preview. Default is `true`. */
+  readonly preview?: boolean
   /** Multiplies `scale` to render the preview pages. Default is `0.2`. */
   readonly previewScale?: number
   /** Readonly mode (disable footer), default is `false`. */
@@ -102,6 +104,7 @@ export class PDFViewer implements IDisposable<void> {
 
   dom: Element | DocumentFragment
   contentDOM: HTMLDivElement
+  loadingMaskDOM: HTMLDivElement
   previewDOM: HTMLDivElement
   pageDOM: HTMLDivElement
   canvas: HTMLCanvasElement
@@ -120,7 +123,7 @@ export class PDFViewer implements IDisposable<void> {
     const pdfjsLib = options.pdfjsLib || 'https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.min.mjs'
     const workerSrc = options.workerSrc || inferWorkerSrc(pdfjsLib)
     this.options = Object.assign(
-      { scale: 1.5, previewScale: 0.2, hidpi: true, readonly: false },
+      { scale: 1.5, previewScale: 0.2, hidpi: true, preview: true, readonly: false },
       options as typeof this.options,
       { pdfjsLib, workerSrc },
     )
@@ -156,6 +159,11 @@ export class PDFViewer implements IDisposable<void> {
 
     this.contentDOM = document.createElement('div')
     this.contentDOM.className = this.c('content')
+
+    this.loadingMaskDOM = this.contentDOM.appendChild(document.createElement('div'))
+    this.loadingMaskDOM.className = this.c('loading-mask')
+    this.loadingMaskDOM.classList.add(this.c('loading-active'))
+    this.loadingMaskDOM.appendChild(loadingSVG(this.namespace))
 
     const previewMask = this.contentDOM.appendChild(document.createElement('div'))
     previewMask.className = this.c('preview-mask')
@@ -220,6 +228,9 @@ export class PDFViewer implements IDisposable<void> {
       if (this.readonly) return
       this.togglePreview()
     }))
+    if (!this.options.preview) {
+      btnSidebar.style.display = 'none'
+    }
 
     const pageJumps = document.createElement('div')
     pageJumps.className = this.c('page-jumps')
@@ -389,14 +400,17 @@ export class PDFViewer implements IDisposable<void> {
   }
 
   onRenderStart() {
+    this.loadingMaskDOM.classList.add(this.c('loading-active'))
   }
 
   onRenderEnd() {
+    this.loadingMaskDOM.classList.remove(this.c('loading-active'))
   }
 
   onRenderError(reason: unknown) {
     if (('' + reason).includes('RenderingCancelledException')) return
     console.warn(reason)
+    this.loadingMaskDOM.classList.remove(this.c('loading-active'))
     this.options.onRenderError?.(reason)
   }
 
