@@ -91,8 +91,8 @@ export class PDFViewer implements IDisposable<void> {
   readonly ready: Promise<void>
 
   readonly namespace = "netless-app-pdfjs"
-  readonly dispose = disposableStore()
   readonly rendering = seq()
+  readonly dispose = disposableStore([this.rendering])
 
   destroyed = false
   getDocumentTask: ReturnType<GetDocument> | null = null
