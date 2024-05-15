@@ -9,7 +9,7 @@ type GetDocument = PDFjsModule['getDocument']
 
 export interface PDFViewerOptions {
   /** The static URL to the PDF file. */
-  readonly src: Parameters<GetDocument>[0]
+  readonly src: string
   /** URL to load the PDF.js lib, default is `"https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.min.mjs"`. */
   readonly pdfjsLib?: string
   /** URL to load the PDF.js worker, default is `"https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.worker.min.mjs"`. */
@@ -59,6 +59,17 @@ function block(): [promise: Promise<void>, resolve: () => void] {
   let resolve: () => void
   let promise = new Promise<void>(r => { resolve = r })
   return [promise, resolve!]
+}
+
+async function range(src: string): Promise<[length: number, supportsRange: boolean]> {
+  let resp = await fetch(src, { method: 'HEAD' })
+  if (resp.ok) {
+    let length = Number.parseInt(resp.headers.get('content-length') || '0') || 0 // coerce NaN to 0
+    let supportsRange = resp.headers.get('accept-ranges') === 'bytes'
+    return [length, supportsRange]
+  } else {
+    return [0, false];
+  }
 }
 
 interface PreviewLazyLoadOptions {
@@ -134,13 +145,37 @@ export class PDFViewer implements IDisposable<void> {
     this.ready = ready
 
     this.pdfjsLib = load(this.options.pdfjsLib)
-    this.pdfjsLib.then(pdfjs => {
+    this.pdfjsLib.then(async (pdfjs) => {
       if (this.destroyed) return
       this.pdfjs = pdfjs
       pdfjs.GlobalWorkerOptions.workerSrc = this.options.workerSrc
-      this.getDocumentTask = pdfjs.getDocument(this.options.src)
-      this.getDocumentTask.promise.then(this.onLoad.bind(this, resolve), this.onError.bind(this))
       this.contentDOM.dataset.pdfjs = [pdfjs.version, pdfjs.build].join(' ')
+
+      const [length, supportsRange] = await range(this.options.src)
+      if (this.destroyed) return
+
+      if (length === 0 || !supportsRange) {
+        this.getDocumentTask = pdfjs.getDocument(this.options.src)
+      } else {
+        const src = this.options.src
+        const controller = new AbortController()
+        const transport = new pdfjs.PDFDataRangeTransport(length, null)
+        transport.requestDataRange = async function requestDataRange(begin, end) {
+          let resp = await fetch(src, { signal: controller.signal, headers: { 'Range': `bytes=${begin}-${end - 1}` } })
+          if (resp.ok) {
+            this.onDataRange(begin, new Uint8Array(await resp.arrayBuffer()))
+            if (end === length) this.onDataProgressiveDone();
+          } else {
+            resp.text().then(console.warn)
+          }
+        }
+        transport.abort = function abort() {
+          controller.abort(new Error('RenderingCancelledException'))
+        }
+        this.getDocumentTask = pdfjs.getDocument({ range: transport })
+      }
+
+      this.getDocumentTask.promise.then(this.onLoad.bind(this, resolve), this.onError.bind(this))
     })
     this.pdfjsLib.catch(this.onError.bind(this))
 
