@@ -61,7 +61,7 @@ function block(): [promise: Promise<void>, resolve: () => void] {
   return [promise, resolve!]
 }
 
-async function range(src: string): Promise<[length: number, supportsRange: boolean]> {
+async function getFileSizeAndIsAcceptRange(src: string): Promise<[length: number, supportsRange: boolean]> {
   let resp = await fetch(src, { method: 'HEAD' })
   if (resp.ok) {
     let length = Number.parseInt(resp.headers.get('content-length') || '0') || 0 // coerce NaN to 0
@@ -69,6 +69,28 @@ async function range(src: string): Promise<[length: number, supportsRange: boole
     return [length, supportsRange]
   } else {
     return [0, false];
+  }
+}
+
+async function getFileRangeData(src: string, begin: number, end: number, controller: AbortController, retryTimes = 3): Promise<Uint8Array> {
+  const retryFunction = async (error: Error) => {
+    if (retryTimes > 0) {
+      console.warn(error)
+      return await getFileRangeData(src, begin, end, controller, retryTimes--)
+    } else {
+      throw error
+    }
+  }
+
+  try {
+    let resp = await fetch(src, { signal: controller.signal, headers: { 'Range': `bytes=${begin}-${end - 1}` } })
+    if (resp.ok) {
+      return new Uint8Array(await resp.arrayBuffer())
+    } else {
+      return retryFunction(new Error(resp.statusText))
+    }
+  } catch (e) {
+    return retryFunction(e);
   }
 }
 
@@ -151,7 +173,7 @@ export class PDFViewer implements IDisposable<void> {
       pdfjs.GlobalWorkerOptions.workerSrc = this.options.workerSrc
       this.contentDOM.dataset.pdfjs = [pdfjs.version, pdfjs.build].join(' ')
 
-      const [length, supportsRange] = await range(this.options.src)
+      const [length, supportsRange] = await getFileSizeAndIsAcceptRange(this.options.src)
       if (this.destroyed) return
 
       if (length === 0 || !supportsRange) {
@@ -161,21 +183,16 @@ export class PDFViewer implements IDisposable<void> {
         const controller = new AbortController()
         const transport = new pdfjs.PDFDataRangeTransport(length, null)
         transport.requestDataRange = async function requestDataRange(begin, end) {
-          let resp = await fetch(src, { signal: controller.signal, headers: { 'Range': `bytes=${begin}-${end - 1}` } })
-          if (resp.ok) {
-            this.onDataRange(begin, new Uint8Array(await resp.arrayBuffer()))
-            if (end === length) this.onDataProgressiveDone();
-          } else {
-            resp.text().then(console.warn)
-          }
+          const data = await getFileRangeData(src, begin, end, controller)
+          this.onDataRange(begin, data)
+          if (end === length) this.onDataProgressiveDone();
         }
         transport.abort = function abort() {
           controller.abort(new Error('RenderingCancelledException'))
         }
-        this.getDocumentTask = pdfjs.getDocument({ range: transport })
+        this.getDocumentTask = pdfjs.getDocument({ range: transport, rangeChunkSize: 4096, disableRange: false })
+        this.getDocumentTask.promise.then(this.onLoad.bind(this, resolve), this.onError.bind(this))
       }
-
-      this.getDocumentTask.promise.then(this.onLoad.bind(this, resolve), this.onError.bind(this))
     })
     this.pdfjsLib.catch(this.onError.bind(this))
 
@@ -319,6 +336,15 @@ export class PDFViewer implements IDisposable<void> {
     }))
 
     ready.then(this.refresh.bind(this))
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        // 用户切换到其他标签页或最小化窗口
+      } else {
+        // 用户回到当前页面
+        this.refresh()
+      }
+    });
   }
 
   setDOM(dom: Element | DocumentFragment) {
