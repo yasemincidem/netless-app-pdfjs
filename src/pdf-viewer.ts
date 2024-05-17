@@ -334,16 +334,11 @@ export class PDFViewer implements IDisposable<void> {
         this.onNewPageIndex(this.pageIndex + 1, 'keydown')
     }))
 
-    ready.then(this.refresh.bind(this))
+    this.dispose.add(listen(document, 'visibilitychange', () => {
+      if (document.visibilityState === 'visible') this.refresh()
+    }))
 
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') {
-        // 用户切换到其他标签页或最小化窗口
-      } else {
-        // 用户回到当前页面
-        this.refresh()
-      }
-    });
+    ready.then(this.refresh.bind(this))
   }
 
   setDOM(dom: Element | DocumentFragment) {
