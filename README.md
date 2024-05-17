@@ -67,6 +67,24 @@ you have to add them to your `script-src` policy:
 Content-Security-Policy: script-src https://cdn.jsdelivr.net/
 ```
 
+### 'Promise.withResolvers' is undefined
+[Error] Unhandled Promise Rejection: TypeError: Promise.withResolvers is not a function. (In 'Promise.withResolvers()', 'Promise.withResolvers' is undefined)
+PDF.js uses Promise.withResolvers, which is not supported in older versions of Safari. You need to manually include a polyfill file to resolve this issue.
+You can run this code before using the PDF: 
+```javascript
+if (typeof Promise.withResolvers === 'undefined') {
+  Promise.withResolvers = function () {
+    let resolve, reject
+    const promise = new Promise((res, rej) => {
+      resolve = res
+      reject = rej
+    })
+    return { promise, resolve, reject }
+  }
+}
+```
+
+
 ### Uncaught SyntaxError / Uncaught ReferenceError
 
 This package only targets modern browsers that support [native ES modules](https://caniuse.com/es6-module).
@@ -76,6 +94,7 @@ This package only targets modern browsers that support [native ES modules](https
 As the package name implies, it uses PDF.js to render the file.
 It is possible that PDF.js has a bug when rendering some files.
 Please raise an issue [there](https://github.com/mozilla/pdf.js) to ask for help.
+
 
 ## License
 
