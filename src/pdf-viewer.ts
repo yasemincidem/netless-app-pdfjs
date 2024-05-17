@@ -61,7 +61,7 @@ function block(): [promise: Promise<void>, resolve: () => void] {
   return [promise, resolve!]
 }
 
-async function getFileSizeAndIsAcceptRange(src: string): Promise<[length: number, supportsRange: boolean]> {
+async function prepare(src: string): Promise<[length: number, supportsRange: boolean]> {
   let resp = await fetch(src, { method: 'HEAD' })
   if (resp.ok) {
     let length = Number.parseInt(resp.headers.get('content-length') || '0') || 0 // coerce NaN to 0
@@ -72,26 +72,23 @@ async function getFileSizeAndIsAcceptRange(src: string): Promise<[length: number
   }
 }
 
-async function getFileRangeData(src: string, begin: number, end: number, controller: AbortController, retryTimes = 3): Promise<Uint8Array> {
-  const retryFunction = async (error: Error) => {
-    if (retryTimes > 0) {
-      console.warn(error)
-      return await getFileRangeData(src, begin, end, controller, retryTimes--)
-    } else {
-      throw error
+async function rangeRequest(src: string, begin: number, end: number, signal: AbortSignal): Promise<Uint8Array> {
+  const MaxRetryCount = 3
+
+  let lastError: Error
+  for (let retry = 0; retry <= MaxRetryCount; retry++) {
+    let resp = await fetch(src, { signal, headers: { 'Range': `bytes=${begin}-${end - 1}` } })
+    if (resp.ok) {
+      return new Uint8Array(await resp.arrayBuffer())
+    }
+    lastError = new Error(await resp.text())
+    if (retry < MaxRetryCount) {
+      const retryText = retry > 0 ? ` (x ${retry + 1})` : ''
+      console.warn(`Fetch "${src}" [${begin},${end}) failed${retryText}: ${lastError}`)
     }
   }
 
-  try {
-    let resp = await fetch(src, { signal: controller.signal, headers: { 'Range': `bytes=${begin}-${end - 1}` } })
-    if (resp.ok) {
-      return new Uint8Array(await resp.arrayBuffer())
-    } else {
-      return retryFunction(new Error(resp.statusText))
-    }
-  } catch (e) {
-    return retryFunction(e);
-  }
+  throw lastError!
 }
 
 interface PreviewLazyLoadOptions {
@@ -173,26 +170,28 @@ export class PDFViewer implements IDisposable<void> {
       pdfjs.GlobalWorkerOptions.workerSrc = this.options.workerSrc
       this.contentDOM.dataset.pdfjs = [pdfjs.version, pdfjs.build].join(' ')
 
-      const [length, supportsRange] = await getFileSizeAndIsAcceptRange(this.options.src)
+      const [length, supportsRange] = await prepare(this.options.src)
       if (this.destroyed) return
 
-      if (length === 0 || !supportsRange) {
+      // Download PDF files under 10 MB directly.
+      if (length < 10485760 || !supportsRange) {
         this.getDocumentTask = pdfjs.getDocument(this.options.src)
       } else {
         const src = this.options.src
         const controller = new AbortController()
         const transport = new pdfjs.PDFDataRangeTransport(length, null)
         transport.requestDataRange = async function requestDataRange(begin, end) {
-          const data = await getFileRangeData(src, begin, end, controller)
+          const data = await rangeRequest(src, begin, end, controller.signal)
           this.onDataRange(begin, data)
           if (end === length) this.onDataProgressiveDone();
         }
         transport.abort = function abort() {
           controller.abort(new Error('RenderingCancelledException'))
         }
-        this.getDocumentTask = pdfjs.getDocument({ range: transport, rangeChunkSize: 4096, disableRange: false })
-        this.getDocumentTask.promise.then(this.onLoad.bind(this, resolve), this.onError.bind(this))
+        // Range chunk size = 16 kB
+        this.getDocumentTask = pdfjs.getDocument({ range: transport, rangeChunkSize: 16384, disableRange: false })
       }
+      this.getDocumentTask.promise.then(this.onLoad.bind(this, resolve), this.onError.bind(this))
     })
     this.pdfjsLib.catch(this.onError.bind(this))
 

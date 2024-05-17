@@ -1,6 +1,6 @@
 import { styles, PDFViewer } from './src'
 
-const testPdfList = [
+const test_files = [
   "https://cdn.jsdelivr.net/gh/mfogel/polygon-clipping/paper.pdf",
   "https://netless-whiteboard.oss-cn-hangzhou.aliyuncs.com/sourceFile/%E6%96%B0%E6%9C%AC%E5%B8%81%E4%BA%A4%E6%98%93%E7%B3%BB%E7%BB%9F%E5%8A%9F%E8%83%BD%E4%BB%8B%E7%BB%8D-20230529V3.pdf",
   "https://netless-whiteboard.oss-cn-hangzhou.aliyuncs.com/sourceFile/01a.%20Missing%20Number%20NOVEL%20App%20Check%20(M%2C%20W)_BrCa.pdf",
@@ -9,9 +9,11 @@ const testPdfList = [
   "https://netless-whiteboard.oss-cn-hangzhou.aliyuncs.com/sourceFile/Manifest%20V3%E6%A6%82%E8%BF%B0.pdf",
   "https://netless-whiteboard.oss-cn-hangzhou.aliyuncs.com/sourceFile/AWS%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E6%9E%B6%E6%9E%84%E5%B8%88%E5%AD%A6%E4%B9%A0%E4%B8%8E%E5%A4%87%E8%80%83_1.pdf",
 
-  // 300+M ppt
+  // (index = 7) 300+M PDF
   "https://netless-whiteboard.oss-cn-hangzhou.aliyuncs.com/sourceFile/Metal%20by%20Tutorials.pdf",
-  // 300+M ppt linearize过
+
+  // 300+M PDF with `qpdf --linearize`
+  // ~> https://qpdf.readthedocs.io/en/stable/linearization.html
   "https://netless-whiteboard.oss-cn-hangzhou.aliyuncs.com/sourceFile/output_metal.pdf",
   "https://netless-whiteboard.oss-cn-hangzhou.aliyuncs.com/sourceFile/output.pdf",
   "https://white-us-doc-convert-dev.oss-us-west-1.aliyuncs.com/test/797c2eb1aa734c9abbf40490123ffe20.pdf",
@@ -21,13 +23,12 @@ const testPdfList = [
   "https://netless-whiteboard.oss-cn-hangzhou.aliyuncs.com/sourceFile/output_metal.pdf",
 ]
 
-const testPdfIndex = 0;
-
+const index = 0
 
 document.head.appendChild(document.createElement('style')).textContent = styles
 
 const pdfViewer = globalThis.pdfViewer = new PDFViewer({
-  src: testPdfList[testPdfIndex]
+  src: test_files[index]
 })
 
 document.querySelector('.wrapper')?.appendChild(pdfViewer.dom)
