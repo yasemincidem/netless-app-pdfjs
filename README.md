@@ -72,7 +72,8 @@ Content-Security-Policy: script-src https://cdn.jsdelivr.net/
 PDF.js uses [`Promise.withResolvers()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers),
 which is a brand new feature in JavaScript.
 In case your target environment does not support this,
-you have to manually include a polyfill to resolve this issue. For example,
+You need to add the following code to the first line of 
+`pdf.min.mjs` and `pdf.worker.min.mjs` to resolve this issue.
 
 ```javascript
 if (typeof Promise.withResolvers === 'undefined') {
@@ -86,6 +87,10 @@ if (typeof Promise.withResolvers === 'undefined') {
   }
 }
 ```
+Alternatively, you can run `node ./scripts/generatorPolyfillForPdfjs.mjs`.
+This command will generate the latest version of the PDF.js files with polyfills applied.
+Upload these two files to a file hosting platform for use.
+
 
 ### Uncaught SyntaxError / Uncaught ReferenceError
 
