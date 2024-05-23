@@ -122,30 +122,6 @@ export const NetlessAppPDFjs: NetlessApp<PDFjsAppAttributes, {}, PDFjsAppOptions
     const page$$ = context.createStorage('page', { index: 0 })
     const view$$ = context.createStorage('view', { uid: "", originX: 0, originY: 0, width: 0, height: 0 })
 
-    let lastIndex = -1
-    const syncPage = async (index: number) => {
-      if (lastIndex !== index) {
-        lastIndex = index
-        context.dispatchAppEvent('pageStateChange', { index, length: app.numPages() })
-      }
-
-      if (!context.getIsWritable()) return
-
-      const scenes = context.getDisplayer().entireScenes()[scenePath]
-      if (!scenes) return
-
-      const name = String(index + 1)
-
-      // "Prepare scenes" may not run correctly if the user suddenly disconnected after adding the app.
-      // So here we add the missing pages again if not found. This is rare to happen.
-      if (!scenes.some(scene => scene.name === name)) {
-        await context.addPage({ scene: { name } })
-      }
-
-      // Switch to that page.
-      await context.setScenePath(`${scenePath}/${name}`)
-    }
-
     const jumpPage = (index: number): boolean => {
       if (!context.getIsWritable()) {
         console.warn('[PDFjs]: no permission, make sure you have test room.isWritable')
@@ -173,6 +149,7 @@ export const NetlessAppPDFjs: NetlessApp<PDFjsAppAttributes, {}, PDFjsAppOptions
         context.addPage({ scene: { name } })
       }
 
+      context.setScenePath(`${scenePath}/${name}`)
       page$$.setState({ index })
       return true
     }
@@ -278,11 +255,21 @@ export const NetlessAppPDFjs: NetlessApp<PDFjsAppAttributes, {}, PDFjsAppOptions
           room.putScenes(scenePath, Array.from({ length: pagesLength }, (_, index) => ({ name: String(index + 1) })))
         }
       }
+      // Jump to correct page `{scenePath}/1`.
+      jumpPage(0)
     })
 
+    let lastIndex = -1
+    const notifyPageStateChange = (index: number) => {
+      if (lastIndex !== index) {
+        lastIndex = index
+        context.dispatchAppEvent('pageStateChange', { index, length: app.numPages() })
+      }
+    }
+
     app.ready.then(() => {
-      syncPage(page$$.state.index)
-      dispose.add(page$$.addStateChangedListener(() => syncPage(page$$.state.index)))
+      notifyPageStateChange(page$$.state.index)
+      dispose.add(page$$.addStateChangedListener(() => notifyPageStateChange(page$$.state.index)))
       dispose.add(view$$.addStateChangedListener(() => syncViewFromRemote(false, true)))
     })
 
