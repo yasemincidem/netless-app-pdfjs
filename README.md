@@ -93,6 +93,16 @@ The 2 files will be placed at the `dist` folder.
 
 This package only targets modern browsers that support [native ES modules](https://caniuse.com/es6-module).
 
+### A certain PDF file opens exceptionally slowly, even several times slower than smaller PDFs.
+
+Most PDF files are designed for easy transmission,
+allowing us to render a single page by requesting a portion of the file through Range requests.
+However, a few PDF files require a complete download before they can be rendered.
+You can check the browser's requests to confirm if the slow rendering of the first page
+is due to the complete download of a PDF file.
+If so, you need to use [qpdf](https://github.com/qpdf/qpdf) to convert the PDF
+into a structure that is easier to transmit.
+
 ### PDF Rendering Issue
 
 As the package name implies, it uses PDF.js to render the file.
