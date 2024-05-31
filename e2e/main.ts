@@ -6,6 +6,13 @@ install(register, {
   appOptions: {
     scale: 1,
     hidpi: false,
+    urlInterrupter: (url: string) => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(url)
+        }, 1000)
+      })
+    }
   }
 })
 
@@ -34,13 +41,15 @@ let ui = createUI(fastboard, document.querySelector('#whiteboard')!)
 globalThis.ui = ui
 
 document.querySelector<HTMLButtonElement>('#btn-add')!.onclick = async () => {
+  console.log('add PDF')
   let appId = await fastboard.manager.addApp({
     kind: 'PDFjs',
     options: {
-      scenePath: '/pdf/polygon-clipping'
+      scenePath: '/pdf/polygon-clipping',
     },
     attributes: {
-      src: 'https://cdn.jsdelivr.net/gh/mfogel/polygon-clipping/paper.pdf'
+      prefix: "https://white-cover.oss-cn-hangzhou.aliyuncs.com/flat/",
+      taskId: "b444a180c2f44a409a4d081e8f1a6d5f",
     },
   })
   console.log('new PDF appId =', appId)

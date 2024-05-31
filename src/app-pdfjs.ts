@@ -17,11 +17,12 @@ const createLogger = (room: Room | undefined): Logger => {
 }
 
 export interface PDFjsAppAttributes {
-  /** The static URL to the PDF file. */
-  src: string
+  /** The static convert returned taskId and prefix to the PDF file. */
+  taskId: string;
+  prefix: string;
 }
 
-export interface PDFjsAppOptions extends Pick<PDFViewerOptions, "pdfjsLib" | "workerSrc" | "scale" | "hidpi" | "maxSize" | "preview" | "previewScale" | "onRenderError"> {
+export interface PDFjsAppOptions extends Pick<PDFViewerOptions, "pdfjsLib" | "workerSrc" | "scale" | "hidpi" | "maxSize" | "preview" | "previewScale" | "onRenderError" | "urlInterrupter"> {
   /** Disables user move / scale the PDF and whiteboard. */
   disableCameraTransform?: boolean
   /** Max scale = `maxCameraScale` * default scale. Not working when `disableCameraTransform` is true. Default: `3` */
@@ -73,14 +74,15 @@ export class AppPDFViewer extends PDFViewer {
 
 const createPDFViewer = (
   box: ReadonlyTeleBox,
-  src: string,
+  taskId: string,
+  prefix: string,
   jumpPage: (index: number) => void,
   page$$: Storage<{ index: number }>,
   options: PDFjsAppOptions,
 ): AppPDFViewer => {
   box.mountStyles(styles)
 
-  const app = new AppPDFViewer({ src, readonly: box.readonly, jumpPage, ...options })
+  const app = new AppPDFViewer({ taskId, prefix, readonly: box.readonly, jumpPage, ...options })
   app.box = box
   box.mountContent(app.contentDOM)
   box.mountFooter(app.footerDOM)
@@ -100,9 +102,9 @@ export const NetlessAppPDFjs: NetlessApp<PDFjsAppAttributes, {}, PDFjsAppOptions
     if (!view)
       throw new Error("[PDFjs]: no whiteboard view, make sure you have added options.scenePath in addApp()")
 
-    const src = context.storage.state.src
-    if (!src)
-      throw new Error("[PDFjs]: no PDF file URL, make sure you have set 'src' in addApp({ attributes: { src } })")
+    const { taskId, prefix } = context.storage.state
+    if (!taskId || !prefix)
+      throw new Error("[PDFjs]: no PDF file URL, make sure you have set 'taskId' or 'prefix' in addApp({ attributes: { taskId, prefix } })")
 
     const scenePath = context.getInitScenePath()!
 
@@ -114,7 +116,7 @@ export const NetlessAppPDFjs: NetlessApp<PDFjsAppAttributes, {}, PDFjsAppOptions
     }
 
     const log = options.log || createLogger(context.getRoom())
-    log(`[PDFjs]: new ${context.appId} ${src}`)
+    log(`[PDFjs]: new ${context.appId} ${taskId} ${prefix}`)
 
     const dispose = disposableStore()
     dispose.add(() => log(`[PDFjs]: dispose ${context.appId}`))
@@ -238,7 +240,7 @@ export const NetlessAppPDFjs: NetlessApp<PDFjsAppAttributes, {}, PDFjsAppOptions
     })
 
     const box = context.getBox()
-    const app = dispose.add(createPDFViewer(box, src, jumpPage, page$$, options))
+    const app = dispose.add(createPDFViewer(box, taskId, prefix, jumpPage, page$$, options))
     app.contentDOM.dataset.appPdfjsVersion = __VERSION__
     app.scaleDocsToFit = scaleDocsToFit
     app.syncPDFView = syncPDFView
