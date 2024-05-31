@@ -24,7 +24,7 @@ A [Netless App](https://github.com/netless-io/netless-app) that renders PDF file
    import { register } from "@netless/fastboard"
    import { install } from "@netless/app-pdfjs"
 
-   install(register) // the app is named 'PDFjs'
+   install(register, options) // the app is named 'PDFjs'
    ```
 
 3. Add this app **after** joinning room.
@@ -37,7 +37,8 @@ A [Netless App](https://github.com/netless-io/netless-app) that renders PDF file
        scenePath: '/pdf/paper' // ! This is required.
      },
      attributes: {
-       src: 'https://cdn.jsdelivr.net/gh/mfogel/polygon-clipping/paper.pdf'
+       prefix: "https://white-cover.oss-cn-hangzhou.aliyuncs.com/flat/",
+       taskId: "b444a180c2f44a409a4d081e8f1a6d5f",
      }
    })
    ```
@@ -66,6 +67,10 @@ you have to add them to your `script-src` policy:
 ```
 Content-Security-Policy: script-src https://cdn.jsdelivr.net/
 ```
+
+Note: If you want to load PDFs on demand (without having to download the entire PDF before rendering),
+you need to expose the 'Accept-Ranges' headers on your stored OSS.
+If our library cannot obtain this header, it will not make segmented requests.
 
 ### TypeError: Promise.withResolvers is not a function
 
@@ -102,6 +107,10 @@ You can check the browser's requests to confirm if the slow rendering of the fir
 is due to the complete download of a PDF file.
 If so, you need to use [qpdf](https://github.com/qpdf/qpdf) to convert the PDF
 into a structure that is easier to transmit.
+
+### What should I do if the OSS I entered in the `Agora Console` is private?
+You can add a new property urlInterrupter to the second parameter options when calling register.
+This property is a function that returns a publicly accessible address by passing in the URL.
 
 ### PDF Rendering Issue
 
