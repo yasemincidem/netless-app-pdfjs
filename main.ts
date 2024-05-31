@@ -28,7 +28,15 @@ const index = 0
 document.head.appendChild(document.createElement('style')).textContent = styles
 
 const pdfViewer = globalThis.pdfViewer = new PDFViewer({
-  src: test_files[index]
+  prefix: "https://white-cover.oss-cn-hangzhou.aliyuncs.com/flat/",
+  taskId: "b444a180c2f44a409a4d081e8f1a6d5f",
+  urlInterrupter: (url: string) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(url)
+      }, 1000)
+    })
+  }
 })
 
 document.querySelector('.wrapper')?.appendChild(pdfViewer.dom)

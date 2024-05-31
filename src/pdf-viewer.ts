@@ -8,8 +8,10 @@ type PDFjsModule = typeof import('pdfjs-dist')
 type GetDocument = PDFjsModule['getDocument']
 
 export interface PDFViewerOptions {
-  /** The static URL to the PDF file. */
-  readonly src: string
+  // readonly src: string
+  /** The static convert pdf taskId and prefix to the PDF file. */
+  readonly taskId: string
+  readonly prefix: string
   /** URL to load the PDF.js lib, default is `"https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.min.mjs"`. */
   readonly pdfjsLib?: string
   /** URL to load the PDF.js worker, default is `"https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.worker.min.mjs"`. */
@@ -31,6 +33,8 @@ export interface PDFViewerOptions {
   readonly readonly?: boolean
   /** Callback to receive render errors. */
   readonly onRenderError?: (reason: unknown) => void
+
+  readonly urlInterrupter?: (url: string) => Promise<string>
 }
 
 function inferWorkerSrc(pdfjsLib: string): string {
@@ -165,23 +169,26 @@ export class PDFViewer implements IDisposable<void> {
 
     this.pdfjsLib = load(this.options.pdfjsLib)
     this.pdfjsLib.then(async (pdfjs) => {
+      let sourceUrl = `${options.prefix}staticConvert/${options.taskId}/${options.taskId}.qpdf`;
+      if (options.urlInterrupter) {
+        sourceUrl = await options.urlInterrupter(sourceUrl)
+      }
       if (this.destroyed) return
       this.pdfjs = pdfjs
       pdfjs.GlobalWorkerOptions.workerSrc = this.options.workerSrc
       this.contentDOM.dataset.pdfjs = [pdfjs.version, pdfjs.build].join(' ')
 
-      const [length, supportsRange] = await prepare(this.options.src)
+      const [length, supportsRange] = await prepare(sourceUrl)
       if (this.destroyed) return
 
       // Download PDF files under 10 MB directly.
       if (length < 10485760 || !supportsRange) {
-        this.getDocumentTask = pdfjs.getDocument(this.options.src)
+        this.getDocumentTask = pdfjs.getDocument(sourceUrl)
       } else {
-        const src = this.options.src
         const controller = new AbortController()
         const transport = new pdfjs.PDFDataRangeTransport(length, null)
         transport.requestDataRange = async function requestDataRange(begin, end) {
-          const data = await rangeRequest(src, begin, end, controller.signal)
+          const data = await rangeRequest(sourceUrl, begin, end, controller.signal)
           this.onDataRange(begin, data)
           if (end === length) this.onDataProgressiveDone();
         }
