@@ -8,9 +8,9 @@ type PDFjsModule = typeof import('pdfjs-dist')
 type GetDocument = PDFjsModule['getDocument']
 
 export interface PDFViewerOptions {
-  // readonly src: string
-  /** The static convert pdf taskId and prefix to the PDF file. */
+  /** The static convert pdf taskId of the PDF file. */
   readonly taskId: string
+  /** The static convert pdf prefix of the PDF file. */
   readonly prefix: string
   /** URL to load the PDF.js lib, default is `"https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.min.mjs"`. */
   readonly pdfjsLib?: string

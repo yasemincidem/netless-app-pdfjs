@@ -109,6 +109,7 @@ If so, you need to use [qpdf](https://github.com/qpdf/qpdf) to convert the PDF
 into a structure that is easier to transmit.
 
 ### What should I do if the OSS I entered in the `Agora Console` is private?
+
 You can add a new property urlInterrupter to the second parameter options when calling register.
 This property is a function that returns a publicly accessible address by passing in the URL.
 
@@ -117,6 +118,8 @@ This property is a function that returns a publicly accessible address by passin
 As the package name implies, it uses PDF.js to render the file.
 It is possible that PDF.js has a bug when rendering some files.
 Please raise an issue [there](https://github.com/mozilla/pdf.js) to ask for help.
+
+## [Changelog](./CHANGELOG.md)
 
 ## License
 

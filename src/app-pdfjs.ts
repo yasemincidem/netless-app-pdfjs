@@ -17,8 +17,9 @@ const createLogger = (room: Room | undefined): Logger => {
 }
 
 export interface PDFjsAppAttributes {
-  /** The static convert returned taskId and prefix to the PDF file. */
+  /** The static convert returned taskId of the PDF file. */
   taskId: string;
+  /** The static convert returned prefix of the PDF file. */
   prefix: string;
 }
 
