@@ -35,6 +35,8 @@ export interface PDFViewerOptions {
   readonly onRenderError?: (reason: unknown) => void
 
   readonly urlInterrupter?: (url: string) => Promise<string>
+  // range request size, default is 128 * 1024
+  readonly rangeChunkSize?: number
 }
 
 function inferWorkerSrc(pdfjsLib: string): string {
@@ -181,8 +183,7 @@ export class PDFViewer implements IDisposable<void> {
       const [length, supportsRange] = await prepare(sourceUrl)
       if (this.destroyed) return
 
-      // Download PDF files under 10 MB directly.
-      if (length < 10485760 || !supportsRange) {
+      if (!supportsRange) {
         this.getDocumentTask = pdfjs.getDocument(sourceUrl)
       } else {
         const controller = new AbortController()
@@ -196,7 +197,7 @@ export class PDFViewer implements IDisposable<void> {
           controller.abort(new Error('RenderingCancelledException'))
         }
         // Range chunk size = 16 kB
-        this.getDocumentTask = pdfjs.getDocument({ range: transport, rangeChunkSize: 16384, disableRange: false })
+        this.getDocumentTask = pdfjs.getDocument({ range: transport, rangeChunkSize: options.rangeChunkSize ?? 128 * 1024, disableRange: false })
       }
       this.getDocumentTask.promise.then(this.onLoad.bind(this, resolve), this.onError.bind(this))
     })

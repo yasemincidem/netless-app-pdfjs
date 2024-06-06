@@ -6,6 +6,7 @@ install(register, {
   appOptions: {
     scale: 1,
     hidpi: false,
+    rangeChunkSize: 64 * 1024,
     urlInterrupter: (url: string) => {
       return new Promise((resolve) => {
         setTimeout(() => {
