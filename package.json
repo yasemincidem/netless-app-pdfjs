@@ -1,6 +1,6 @@
 {
   "name": "@netless/app-pdfjs",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Netless App for viewing raw PDF files, using PDF.js",
   "author": "netless",
   "license": "MIT",
