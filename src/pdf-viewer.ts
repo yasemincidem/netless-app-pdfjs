@@ -35,7 +35,7 @@ export interface PDFViewerOptions {
   readonly onRenderError?: (reason: unknown) => void
 
   readonly urlInterrupter?: (url: string) => Promise<string>
-  // range request size, default is 128 * 1024
+  // Range request size, default is 128 kB.
   readonly rangeChunkSize?: number
 }
 
@@ -159,7 +159,7 @@ export class PDFViewer implements IDisposable<void> {
     const pdfjsLib = options.pdfjsLib || 'https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.min.mjs'
     const workerSrc = options.workerSrc || inferWorkerSrc(pdfjsLib)
     this.options = Object.assign(
-      { scale: 1.5, previewScale: 0.2, hidpi: true, preview: true, readonly: false },
+      { scale: 1.5, previewScale: 0.2, hidpi: true, preview: true, readonly: false, rangeChunkSize: 128 * 1024 },
       options as typeof this.options,
       { pdfjsLib, workerSrc },
     )
@@ -196,8 +196,7 @@ export class PDFViewer implements IDisposable<void> {
         transport.abort = function abort() {
           controller.abort(new Error('RenderingCancelledException'))
         }
-        // Range chunk size = 16 kB
-        this.getDocumentTask = pdfjs.getDocument({ range: transport, rangeChunkSize: options.rangeChunkSize ?? 128 * 1024, disableRange: false })
+        this.getDocumentTask = pdfjs.getDocument({ range: transport, rangeChunkSize: options.rangeChunkSize })
       }
       this.getDocumentTask.promise.then(this.onLoad.bind(this, resolve), this.onError.bind(this))
     })

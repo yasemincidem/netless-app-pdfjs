@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add option `rangeChunkSize`. ([#9](https://github.com/netless-io/netless-app-pdfjs/pull/9))
+
 ## 0.1.3 (2024-05-31)
 
 - `src` &rarr; `taskId` + `prefix`. ([#4](https://github.com/netless-io/netless-app-pdfjs/pull/4), [#5](https://github.com/netless-io/netless-app-pdfjs/pull/5))
