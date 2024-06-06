@@ -23,7 +23,7 @@ export interface PDFjsAppAttributes {
   prefix: string;
 }
 
-export interface PDFjsAppOptions extends Pick<PDFViewerOptions, "pdfjsLib" | "workerSrc" | "scale" | "hidpi" | "maxSize" | "preview" | "previewScale" | "onRenderError" | "urlInterrupter"> {
+export interface PDFjsAppOptions extends Pick<PDFViewerOptions, "pdfjsLib" | "workerSrc" | "scale" | "hidpi" | "maxSize" | "preview" | "previewScale" | "onRenderError" | "urlInterrupter" | "rangeChunkSize"> {
   /** Disables user move / scale the PDF and whiteboard. */
   disableCameraTransform?: boolean
   /** Max scale = `maxCameraScale` * default scale. Not working when `disableCameraTransform` is true. Default: `3` */
