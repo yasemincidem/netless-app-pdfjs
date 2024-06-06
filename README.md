@@ -33,15 +33,17 @@ A [Netless App](https://github.com/netless-io/netless-app) that renders PDF file
    fastboard.manager.addApp({
      kind: 'PDFjs',
      options: {
-       title: 'a.pdf',
-       scenePath: '/pdf/paper' // ! This is required.
+       title: 'a.pdf', // ! Required. Window title.
+       scenePath: '/pdf/paper' // ! Required. Make sure it starts with `/` and not ends with `/`.
      },
      attributes: {
-       prefix: "https://white-cover.oss-cn-hangzhou.aliyuncs.com/flat/",
-       taskId: "b444a180c2f44a409a4d081e8f1a6d5f",
+       prefix: "https://white-cover.oss-cn-hangzhou.aliyuncs.com/flat/", // ! Required.
+       taskId: "b444a180c2f44a409a4d081e8f1a6d5f", // ! Required.
      }
    })
    ```
+
+   You can get the `prefix` and `taskId` from the conversion response JSON.
 
 ## Troubleshooting
 
