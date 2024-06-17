@@ -18,7 +18,11 @@ A [Netless App](https://github.com/netless-io/netless-app) that renders PDF file
    You have to obtain a static URL to the file first to continue.
    For example, you can use an <abbr title="Object Storage Service">OSS</abbr> to achieve this.
 
-2. Register this app **before** joinning room.
+2. Convert this PDF file using the [Agora File Conversion](https://doc.shengwang.cn/api-ref/whiteboard/restful/restful-wb/operations/post-v5-projector-tasks) service. Remember to set `outputFormat: "qpdf"`.
+
+   You will get a `taskId` and `prefix` URL in the response of [Query Task Status API](https://doc.shengwang.cn/api-ref/whiteboard/restful/restful-wb/operations/get-v5-projector-tasks-uuid).
+
+3. Register this app **before** joinning room.
 
    ```js
    import { register } from "@netless/fastboard"
@@ -27,21 +31,25 @@ A [Netless App](https://github.com/netless-io/netless-app) that renders PDF file
    install(register, options) // the app is named 'PDFjs'
    ```
 
-3. Add this app **after** joinning room.
+4. Add this app **after** joinning room.
 
    ```js
    fastboard.manager.addApp({
      kind: 'PDFjs',
      options: {
-       title: 'a.pdf', // ! Required. Window title.
-       scenePath: '/pdf/paper' // ! Required. Make sure it starts with `/` and not ends with `/`.
+       title: 'a.pdf', // ! Required for window title.
+       scenePath: '/pdf/paper' // ! Required for displaying whiteboard on it.
      },
      attributes: {
-       prefix: "https://white-cover.oss-cn-hangzhou.aliyuncs.com/flat/", // ! Required.
-       taskId: "b444a180c2f44a409a4d081e8f1a6d5f", // ! Required.
+       prefix, // ! Required.
+       taskId, // ! Required.
      }
    })
    ```
+
+   - Make sure `scenePath` starts with `/` and not ends with `/`.
+   - The `prefix` will be like `"https://white-cover.oss-cn-hangzhou.aliyuncs.com/flat/"`.
+   - The `taskId` will be like `"b444a180c2f44a409a4d081e8f1a6d5f"`.
 
    You can get the `prefix` and `taskId` from the conversion response JSON.
 
