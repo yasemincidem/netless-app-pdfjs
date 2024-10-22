@@ -18,9 +18,9 @@ A [Netless App](https://github.com/netless-io/netless-app) that renders PDF file
    You have to obtain a static URL to the file first to continue.
    For example, you can use an <abbr title="Object Storage Service">OSS</abbr> to achieve this.
 
-2. Convert this PDF file using the [Agora File Conversion](https://doc.shengwang.cn/api-ref/whiteboard/restful/restful-wb/operations/post-v5-projector-tasks) service. Remember to set `outputFormat: "qpdf"`.
+2. Convert this PDF file using the [Agora File Conversion](https://docs.agora.io/en/interactive-whiteboard/reference/whiteboard-api/file-conversion?platform=android#start-file-conversion) service. Remember to set `outputFormat: "qpdf"`.
 
-   You will get a `taskId` and `prefix` URL in the response of [Query Task Status API](https://doc.shengwang.cn/api-ref/whiteboard/restful/restful-wb/operations/get-v5-projector-tasks-uuid).
+   You will get a `taskId` and `prefix` URL in the response of [Query Task Status API](https://docs.agora.io/en/interactive-whiteboard/reference/whiteboard-api/file-conversion?platform=android#query-the-progress-of-a-file-conversion-task).
 
 3. Register this app **before** joinning room.
 
